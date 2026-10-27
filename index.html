@@ -1,0 +1,541 @@
+<title>백엔드 단어장</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: 한 줄 상단바 + 탭 4개, 본문은 640px 읽기 폭 하나의 컬럼. 용어는 모노스페이스로 '코드처럼' 보이게 */
+:root {
+  --bg: #f3f5f2;
+  --surface: #ffffff;
+  --fg: #1b2420;
+  --sub: #5d6b64;
+  --line: #d9e0db;
+  --accent: #1f6f5c;
+  --accent-soft: #e2efe9;
+  --wrong: #b4511f;
+  --wrong-soft: #f8e9df;
+  --right: #2f7d3a;
+  --right-soft: #e3f1e4;
+  --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-code: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #131815; --surface: #1b221e; --fg: #e4ebe7; --sub: #93a39a; --line: #2c3631;
+    --accent: #5fc0a3; --accent-soft: #1f3a32; --wrong: #f08a55; --wrong-soft: #3d2619;
+    --right: #79c985; --right-soft: #1e3622; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #131815; --surface: #1b221e; --fg: #e4ebe7; --sub: #93a39a; --line: #2c3631;
+  --accent: #5fc0a3; --accent-soft: #1f3a32; --wrong: #f08a55; --wrong-soft: #3d2619;
+  --right: #79c985; --right-soft: #1e3622; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-body);
+  font-size: 15px; line-height: 1.6;
+}
+.wrap {
+  max-width: 680px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 48px;
+}
+header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+h1 { font-size: 22px; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+h1 span { font-family: var(--font-code); color: var(--accent); font-weight: 600; }
+.sync { font-size: 12px; color: var(--sub); }
+.lead { color: var(--sub); margin: 4px 0 16px; font-size: 14px; }
+
+nav { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 20px; overflow-x: auto; }
+nav button {
+  font: inherit; font-size: 15px; font-weight: 600; background: none; border: 0; color: var(--sub);
+  padding: 10px 12px; border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap;
+}
+nav button[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
+nav .count { font-family: var(--font-code); font-size: 12px; color: var(--wrong); margin-left: 4px; }
+
+button, input, select { font: inherit; }
+button:focus-visible, input:focus-visible, select:focus-visible, .flash:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn {
+  border: 1px solid var(--line); background: var(--surface); color: var(--fg);
+  padding: 9px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;
+}
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.btn.warn { color: var(--wrong); }
+.btn:disabled { opacity: .45; cursor: default; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+.chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0 16px; }
+.chip {
+  border: 1px solid var(--line); background: var(--surface); color: var(--sub);
+  padding: 4px 12px; border-radius: 999px; font-size: 13px; cursor: pointer;
+}
+.chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--fg); }
+
+.search { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--fg); }
+
+.term { font-family: var(--font-code); font-weight: 600; }
+.en { color: var(--sub); font-size: 13px; }
+.cat { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+
+/* 개념 사전 */
+.dict { display: grid; gap: 0; }
+.entry { padding: 14px 0; border-bottom: 1px solid var(--line); display: grid; gap: 4px; min-width: 0; }
+.entry .head { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.entry .term { font-size: 17px; }
+.entry p { margin: 0; }
+.entry .ex { color: var(--sub); font-size: 14px; }
+.badge { font-size: 11px; padding: 1px 8px; border-radius: 999px; font-weight: 600; }
+.badge.known { background: var(--right-soft); color: var(--right); }
+.badge.wrong { background: var(--wrong-soft); color: var(--wrong); }
+
+/* 암기 카드 */
+.progress { height: 6px; background: var(--line); border-radius: 999px; overflow: hidden; margin: 8px 0 4px; }
+.progress div { height: 100%; background: var(--accent); transition: width .3s; }
+.flash {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  min-height: 240px; padding: 28px 24px; display: grid; place-items: center; text-align: center;
+  cursor: pointer; margin: 16px 0; user-select: none;
+}
+.flash .term { font-size: clamp(22px, 6vw, 30px); }
+.flash .def { font-size: 17px; max-width: 46ch; }
+.flash .hint { font-size: 12px; color: var(--sub); margin-top: 12px; }
+.flash .ex { color: var(--sub); font-size: 14px; margin-top: 10px; max-width: 46ch; }
+.cardnav { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.meta { font-size: 13px; color: var(--sub); font-variant-numeric: tabular-nums; }
+
+/* 퀴즈 */
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; }
+.qtop { display: flex; justify-content: space-between; font-size: 13px; color: var(--sub); font-variant-numeric: tabular-nums; }
+.question { font-size: 18px; font-weight: 600; margin: 10px 0 16px; text-wrap: balance; }
+.question .term { color: var(--accent); }
+.choices { display: grid; gap: 8px; }
+.choice {
+  text-align: left; border: 1px solid var(--line); background: var(--bg); color: var(--fg);
+  padding: 12px 14px; border-radius: 8px; cursor: pointer; line-height: 1.5;
+}
+.choice:hover:not(:disabled) { border-color: var(--accent); }
+.choice.right { border-color: var(--right); background: var(--right-soft); }
+.choice.wrong { border-color: var(--wrong); background: var(--wrong-soft); }
+.choice:disabled { cursor: default; }
+.feedback { margin-top: 14px; padding: 12px 14px; border-radius: 8px; font-size: 14px; }
+.feedback.ok { background: var(--right-soft); }
+.feedback.no { background: var(--wrong-soft); }
+.score { font-family: var(--font-code); font-size: 40px; font-weight: 600; color: var(--accent); font-variant-numeric: tabular-nums; }
+label.field { display: grid; gap: 4px; font-size: 13px; color: var(--sub); }
+label.field select { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); }
+
+/* 오답노트 */
+.wrongitem { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.wrongitem > div { min-width: 0; }
+.tally { font-family: var(--font-code); color: var(--wrong); font-weight: 600; font-size: 13px; white-space: nowrap; }
+.empty { text-align: center; color: var(--sub); padding: 40px 16px; border: 1px dashed var(--line); border-radius: var(--radius); }
+.empty strong { display: block; color: var(--fg); font-size: 16px; margin-bottom: 4px; }
+
+@media (prefers-reduced-motion: reduce) { .progress div { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>백엔드 <span>단어장</span></h1>
+    <div class="sync" id="sync">저장 위치 확인 중…</div>
+  </header>
+  <p class="lead">HTTP부터 DB, 인증, 인프라까지 백엔드 필수 개념 <b id="total">0</b>개. 사전으로 읽고, 카드로 외우고, 퀴즈로 확인하세요.</p>
+
+  <nav role="tablist">
+    <button role="tab" id="tab-dict" data-view="dict">개념 사전</button>
+    <button role="tab" id="tab-cards" data-view="cards">암기 카드</button>
+    <button role="tab" id="tab-quiz" data-view="quiz">퀴즈</button>
+    <button role="tab" id="tab-wrong" data-view="wrong">오답노트<span class="count" id="wrongCount"></span></button>
+  </nav>
+
+  <section id="view-dict" hidden>
+    <input class="search" id="q" type="search" placeholder="용어나 설명으로 검색 (예: 토큰, 캐시, 401)">
+    <div class="chips" id="dictChips"></div>
+    <div class="dict" id="dictList"></div>
+  </section>
+
+  <section id="view-cards" hidden>
+    <div class="row">
+      <label class="field">분류<select id="cardCat"></select></label>
+      <label class="field">카드<select id="cardMode">
+        <option value="todo">아직 못 외운 것</option>
+        <option value="all">전체</option>
+      </select></label>
+    </div>
+    <div class="progress"><div id="cardBar"></div></div>
+    <div class="meta" id="cardMeta"></div>
+    <div class="flash" id="flash" tabindex="0" role="button" aria-label="카드 뒤집기"></div>
+    <div class="cardnav">
+      <button class="btn" id="prev">← 이전</button>
+      <div class="row">
+        <button class="btn warn" id="dunno">모르겠어요</button>
+        <button class="btn primary" id="gotit">외웠어요</button>
+      </div>
+    </div>
+    <p class="meta">스페이스로 뒤집고, ← → 로 넘깁니다. "모르겠어요"는 오답노트에도 담깁니다.</p>
+  </section>
+
+  <section id="view-quiz" hidden>
+    <div id="quizBox"></div>
+  </section>
+
+  <section id="view-wrong" hidden>
+    <div id="wrongBox"></div>
+  </section>
+</div>
+
+<script>
+// ───────── 개념 데이터 ─────────
+const CATS = ['HTTP·네트워크', 'API', '데이터베이스', '인증·보안', '서버·인프라'];
+const TERMS = [
+  // HTTP·네트워크
+  ['http', 0, 'HTTP', 'HyperText Transfer Protocol', '클라이언트가 요청(request)을 보내고 서버가 응답(response)을 돌려주는 웹 통신 규칙. 요청끼리 서로를 기억하지 않는 무상태(stateless) 방식이다.', '브라우저가 주소창의 페이지를 받아 오는 것, 앱이 서버에서 데이터를 가져오는 것 모두 HTTP 요청이다.'],
+  ['https', 0, 'HTTPS / TLS', 'HTTP Secure', 'HTTP 통신을 TLS로 암호화한 것. 중간에서 내용을 엿보거나 바꿀 수 없고, 인증서로 서버가 진짜인지 확인한다.', '로그인·결제 페이지는 반드시 HTTPS. 주소창의 자물쇠 아이콘이 TLS 연결 표시다.'],
+  ['method', 0, 'HTTP 메서드', 'GET · POST · PUT · PATCH · DELETE', '요청이 무엇을 하려는지 나타내는 동사. GET 조회, POST 생성, PUT 전체 수정, PATCH 일부 수정, DELETE 삭제.', 'Supabase 실습에서 LED 상태 하나만 바꿀 때 PATCH를 썼다.'],
+  ['status', 0, '상태 코드', 'HTTP Status Code', '응답 결과를 세 자리 숫자로 알려 준다. 2xx 성공, 3xx 이동, 4xx 클라이언트 잘못, 5xx 서버 잘못.', '200 OK, 201 Created, 400 잘못된 요청, 401 인증 필요, 403 권한 없음, 404 없음, 500 서버 오류.'],
+  ['header', 0, '헤더', 'HTTP Header', '요청·응답 본문과 별도로 붙는 부가 정보(이름: 값). 데이터 형식, 인증 토큰, 캐시 규칙 등을 담는다.', 'Content-Type: application/json, Authorization: Bearer <토큰>'],
+  ['cookie', 0, '쿠키', 'Cookie', '서버가 브라우저에 저장시키는 작은 데이터. 이후 같은 사이트에 요청할 때마다 브라우저가 자동으로 함께 보낸다.', '로그인 상태 유지용 세션 ID를 쿠키에 담는 경우가 많다.'],
+  ['dns', 0, 'DNS', 'Domain Name System', '사람이 읽는 도메인 이름을 컴퓨터가 쓰는 IP 주소로 바꿔 주는 전화번호부 같은 시스템.', 'example.com → 93.184.215.14. 로컬망의 xiao.local은 mDNS로 같은 일을 한다.'],
+  ['port', 0, '포트', 'Port', '한 컴퓨터 안에서 어느 프로그램에게 가는 통신인지 구분하는 번호(0~65535).', 'HTTP 80, HTTPS 443, MQTT 1883, PostgreSQL 5432.'],
+  ['websocket', 0, '웹소켓', 'WebSocket', '한 번 연결하면 끊지 않고 서버와 클라이언트가 양방향으로 계속 메시지를 주고받는 프로토콜.', '채팅, 실시간 알림, 브라우저에서 MQTT 브로커에 붙는 대시보드(9001 포트)에 쓴다.'],
+  ['cors', 0, 'CORS', 'Cross-Origin Resource Sharing', '다른 출처(도메인·포트)의 서버에 브라우저가 요청할 때, 서버가 허용 헤더로 "이 출처는 괜찮다"고 답해야만 응답을 읽게 하는 브라우저 보안 규칙.', 'localhost:3000 프론트에서 localhost:8080 API를 부를 때 CORS 오류가 자주 난다.'],
+
+  // API
+  ['api', 1, 'API', 'Application Programming Interface', '프로그램끼리 기능을 주고받기 위해 정해 둔 약속(주소, 입력, 출력 형식).', '날씨 API에 도시 이름을 보내면 기온 JSON을 돌려준다.'],
+  ['rest', 1, 'REST', 'Representational State Transfer', '자원(resource)을 URL로 표현하고, 그 자원에 할 일은 HTTP 메서드로 표현하는 API 설계 방식.', 'GET /users/7 조회, PATCH /users/7 수정, DELETE /users/7 삭제.'],
+  ['endpoint', 1, '엔드포인트', 'Endpoint', '특정 기능을 호출할 수 있는 API의 주소(메서드 + 경로).', 'POST /api/led?on=1 은 LED를 켜는 엔드포인트였다.'],
+  ['json', 1, 'JSON', 'JavaScript Object Notation', '키-값 쌍으로 이루어진 텍스트 데이터 형식. 사람이 읽기 쉽고 거의 모든 언어가 지원해서 API 표준처럼 쓰인다.', '{"led": true, "touch_value": 16047}'],
+  ['idempotent', 1, '멱등성', 'Idempotency', '같은 요청을 여러 번 보내도 결과가 한 번 보낸 것과 같은 성질. GET, PUT, DELETE는 멱등, POST는 보통 아니다.', '"LED 켜기"를 두 번 보내도 켜짐 그대로라 멱등. "카운트 +1"은 멱등이 아니다.'],
+  ['params', 1, '경로·쿼리 파라미터', 'Path / Query Parameter', '경로 파라미터는 URL 경로 안에서 대상을 지정하고(/users/7), 쿼리 파라미터는 ? 뒤에서 조건을 붙인다(?page=2&sort=new).', 'Supabase: /rest/v1/xiao_device?id=eq.xiao 는 쿼리로 행을 골랐다.'],
+  ['pagination', 1, '페이지네이션', 'Pagination', '결과가 많을 때 한 번에 다 보내지 않고 나눠서 주는 방식. offset 방식과 cursor 방식이 있다.', 'GET /posts?limit=20&offset=40 → 3페이지.'],
+  ['ratelimit', 1, '레이트 리밋', 'Rate Limiting', '일정 시간 동안 받을 수 있는 요청 수를 제한해서 서버를 보호하는 것. 넘으면 429 Too Many Requests.', '로그인 시도 1분에 5회로 제한해 무차별 대입 공격을 막는다.'],
+  ['webhook', 1, '웹훅', 'Webhook', '이벤트가 생기면 서버가 미리 등록된 다른 서버 주소로 먼저 HTTP 요청을 보내 알려 주는 방식(역방향 API).', '결제가 완료되면 결제사가 우리 서버 /webhooks/payment 로 POST를 보낸다.'],
+  ['graphql', 1, 'GraphQL', 'GraphQL', '클라이언트가 필요한 필드를 쿼리로 정확히 골라 한 엔드포인트에서 받아 가는 API 방식.', '{ user(id: 7) { name posts { title } } } 처럼 원하는 모양대로 요청한다.'],
+
+  // 데이터베이스
+  ['rdb', 2, '관계형 DB', 'RDBMS', '데이터를 행과 열이 있는 테이블에 저장하고, 테이블끼리 키로 관계를 맺는 데이터베이스.', 'PostgreSQL(Supabase), MySQL, Oracle.'],
+  ['sql', 2, 'SQL', 'Structured Query Language', '관계형 DB에 데이터를 조회·추가·수정·삭제하도록 명령하는 언어.', 'SELECT * FROM xiao_device WHERE id = \'xiao\';'],
+  ['pk', 2, '기본 키', 'Primary Key', '테이블에서 각 행을 유일하게 구별하는 열. 중복과 NULL이 허용되지 않는다.', 'users 테이블의 id, xiao_device 테이블의 id.'],
+  ['fk', 2, '외래 키', 'Foreign Key', '다른 테이블의 기본 키를 가리키는 열. 테이블 사이의 관계를 만들고, 없는 대상을 가리키지 못하게 막는다.', 'orders.user_id → users.id'],
+  ['index', 2, '인덱스', 'Index', '특정 열을 빨리 찾도록 미리 정렬해 둔 자료구조. 조회는 빨라지지만 쓰기와 저장 공간 비용이 든다.', '책 뒤의 "찾아보기"와 같다. email로 자주 찾으면 email에 인덱스를 건다.'],
+  ['transaction', 2, '트랜잭션', 'Transaction', '여러 작업을 하나로 묶어 전부 성공하거나 전부 취소되게 하는 단위(COMMIT / ROLLBACK).', '계좌 이체: A에서 빼기 + B에 더하기 중 하나만 되면 안 된다.'],
+  ['acid', 2, 'ACID', 'Atomicity · Consistency · Isolation · Durability', '트랜잭션이 지켜야 할 네 가지 성질. 원자성, 일관성, 격리성, 지속성.', '원자성 = 전부 아니면 전무, 지속성 = 커밋되면 서버가 꺼져도 남는다.'],
+  ['normalize', 2, '정규화', 'Normalization', '같은 데이터가 여러 곳에 중복 저장되지 않도록 테이블을 쪼개는 설계 과정.', '주문마다 고객 주소를 복사하지 않고 customers 테이블을 따로 두고 참조한다.'],
+  ['nosql', 2, 'NoSQL', 'Not only SQL', '테이블 대신 문서(JSON), 키-값, 그래프 등 다른 구조로 저장하는 DB. 스키마가 유연하고 수평 확장이 쉽다.', 'MongoDB(문서), Redis(키-값), Firestore(문서).'],
+  ['orm', 2, 'ORM', 'Object-Relational Mapping', 'DB 테이블을 코드의 객체(클래스)로 다루게 해 주는 도구. SQL을 직접 쓰지 않아도 된다.', 'Prisma, JPA/Hibernate, SQLAlchemy, Django ORM.'],
+  ['nplus1', 2, 'N+1 문제', 'N+1 Query Problem', '목록 1번 조회 후, 각 항목마다 관련 데이터를 또 조회해서 쿼리가 N+1번 나가는 성능 문제. JOIN이나 즉시 로딩으로 해결한다.', '게시글 100개를 가져온 뒤 작성자를 글마다 따로 조회하면 쿼리 101번.'],
+  ['migration', 2, '마이그레이션', 'Migration', 'DB 구조(테이블, 열) 변경을 코드 파일로 기록하고 순서대로 적용하는 방법. 팀 전체 DB 구조를 같게 유지한다.', 'schema.sql처럼 변경 내역을 파일로 남겨 두고 실행한다.'],
+
+  // 인증·보안
+  ['authn', 3, '인증 vs 인가', 'Authentication / Authorization', '인증은 "누구인지" 확인(로그인), 인가는 "무엇을 해도 되는지" 확인(권한). 실패 시 각각 401, 403.', '로그인은 됐지만 관리자 페이지에 들어가면 403.'],
+  ['session', 3, '세션', 'Session', '로그인 정보를 서버가 저장하고, 클라이언트에는 세션 ID만 쿠키로 주는 방식. 서버가 상태를 기억한다.', '서버 메모리나 Redis에 {sessionId: userId}를 보관한다.'],
+  ['jwt', 3, 'JWT', 'JSON Web Token', '사용자 정보와 서명을 담은 토큰. 서버가 저장하지 않아도 서명만 검증하면 되어 확장에 유리하다. 헤더.페이로드.서명 세 부분.', 'Authorization: Bearer eyJhbGciOi… Supabase의 예전 anon 키도 JWT였다.'],
+  ['oauth', 3, 'OAuth 2.0', 'OAuth', '비밀번호를 넘기지 않고, 다른 서비스(구글 등)에게 정해진 범위의 접근 권한만 위임하는 표준.', '"구글로 로그인", Supabase MCP 연결 때 브라우저에서 허용 누르기.'],
+  ['hash', 3, '해시 (비밀번호)', 'Password Hashing', '원래 값으로 되돌릴 수 없는 단방향 변환. 비밀번호는 평문이 아니라 솔트를 섞은 해시로 저장한다.', 'bcrypt, argon2. DB가 털려도 비밀번호 원문은 모른다.'],
+  ['sqli', 3, 'SQL 인젝션', 'SQL Injection', '입력값에 SQL 조각을 넣어 의도하지 않은 쿼리를 실행시키는 공격. 파라미터 바인딩(Prepared Statement)으로 막는다.', '아이디 칸에 \' OR 1=1 -- 을 넣어 로그인 우회.'],
+  ['xss', 3, 'XSS', 'Cross-Site Scripting', '게시글 등에 악성 스크립트를 심어 다른 사용자 브라우저에서 실행되게 하는 공격. 출력 시 이스케이프로 막는다.', '댓글에 <script>로 쿠키를 빼 가는 코드를 넣는 경우.'],
+  ['csrf', 3, 'CSRF', 'Cross-Site Request Forgery', '로그인된 사용자의 브라우저를 이용해 본인 모르게 요청을 보내게 하는 공격. CSRF 토큰, SameSite 쿠키로 막는다.', '악성 사이트의 숨은 폼이 은행 /transfer 로 POST를 보낸다.'],
+  ['rls', 3, 'RLS', 'Row Level Security', 'DB가 행(row) 단위로 누가 읽고 쓸 수 있는지 정책으로 제한하는 기능.', 'xiao_device 테이블은 공개 키로 xiao 행 읽기·수정만 되게 정책을 걸었다.'],
+  ['apikey', 3, '공개 키 vs 비밀 키', 'Publishable / Secret Key', '공개(publishable) 키는 웹·앱 코드에 넣어도 되고 권한은 RLS 같은 규칙이 지킨다. 비밀(secret) 키는 모든 권한이라 서버에만 둔다.', 'sb_publishable_… 은 대시보드에, sb_secret_… 은 절대 공개 금지.'],
+  ['env', 3, '환경 변수', 'Environment Variable', '비밀번호, API 키, DB 주소처럼 코드에 직접 쓰면 안 되는 설정을 실행 환경에서 주입하는 값. .env 파일은 깃에 올리지 않는다.', 'arduino_secrets.h, config.js를 .gitignore에 넣은 것도 같은 원리.'],
+
+  // 서버·인프라
+  ['lb', 4, '로드 밸런서', 'Load Balancer', '들어오는 요청을 여러 서버에 나눠 보내 부하를 분산하고, 죽은 서버는 빼 주는 장치.', 'Nginx, AWS ALB. 라운드 로빈 방식으로 차례대로 배분.'],
+  ['scale', 4, '수직 / 수평 확장', 'Scale Up / Scale Out', '수직 확장은 서버 한 대의 성능을 키우는 것, 수평 확장은 서버 대수를 늘리는 것.', 'CPU·RAM 업그레이드(수직) vs 같은 서버 3대 + 로드 밸런서(수평).'],
+  ['cache', 4, '캐시', 'Cache', '자주 쓰는 데이터를 더 빠른 곳에 임시로 저장해 두고 재사용하는 것. 원본이 바뀌면 무효화가 필요하다.', 'Redis에 인기 상품 목록을 60초간 저장. 브라우저 캐시, CDN도 캐시다.'],
+  ['cdn', 4, 'CDN', 'Content Delivery Network', '이미지·JS 같은 정적 파일을 전 세계 여러 서버에 복사해 두고 사용자와 가까운 곳에서 전달하는 네트워크.', 'Cloudflare, CloudFront. unpkg에서 mqtt.js를 불러온 것도 CDN.'],
+  ['container', 4, '컨테이너 (Docker)', 'Container', '앱과 실행에 필요한 라이브러리·설정을 하나로 묶어 어디서든 똑같이 실행되게 하는 격리 환경.', '"내 컴퓨터에선 되는데"를 없앤다. docker run postgres'],
+  ['cicd', 4, 'CI/CD', 'Continuous Integration / Delivery', '코드를 올릴 때마다 자동으로 빌드·테스트(CI)하고 배포(CD)까지 하는 파이프라인.', 'GitHub Actions: push → 테스트 → 통과하면 서버에 배포.'],
+  ['mq', 4, '메시지 큐', 'Message Queue', '작업을 바로 처리하지 않고 큐에 넣어 두면 다른 작업자가 꺼내 처리하는 비동기 구조. 서비스 간 결합을 낮춘다.', '회원가입 직후 환영 메일 발송을 큐에 넣는다. RabbitMQ, Kafka, SQS.'],
+  ['pubsub', 4, 'Pub/Sub · MQTT', 'Publish / Subscribe', '보내는 쪽(퍼블리셔)은 토픽에 발행만 하고, 받는 쪽(구독자)은 토픽을 구독만 한다. 중간의 브로커가 전달해서 서로를 몰라도 된다.', 'xiao/touch 토픽: 보드가 발행, 웹 대시보드가 구독. 브로커는 Mosquitto.'],
+  ['serverless', 4, '서버리스', 'Serverless', '서버 관리 없이 함수 단위로 코드를 올리면, 요청이 올 때만 실행되고 쓴 만큼 비용을 내는 방식.', 'AWS Lambda, Supabase Edge Functions, Cloudflare Workers.'],
+  ['log', 4, '로그 & 모니터링', 'Logging / Monitoring', '서버에서 일어난 일을 기록(로그)하고, 지표(CPU, 응답 시간, 에러율)를 지켜보며 문제를 빨리 찾는 것.', 'mosquitto -v 로 접속·메시지 로그를 본 것도 로그 확인.'],
+].map(([id, c, term, en, def, ex]) => ({ id, cat: CATS[c], term, en, def, ex }));
+const BY_ID = Object.fromEntries(TERMS.map(t => [t.id, t]));
+
+// ───────── 진도 저장: 계정(db) → 없으면 이 브라우저(localStorage) ─────────
+// progress = { known: {id: true}, wrong: {id: {n, last}}, quizzes, bestPct }
+let progress = { known: {}, wrong: {}, quizzes: 0, bestPct: 0 };
+const LS_KEY = 'backend-study-progress';
+let docRef = null, saveTimer = null, saving = Promise.resolve();
+
+function loadLocal() {
+  try { const v = JSON.parse(localStorage.getItem(LS_KEY)); if (v) progress = { ...progress, ...v }; } catch (e) {}
+}
+function save() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(progress)); } catch (e) {}
+  if (!docRef) return;
+  // 연속 클릭은 한 번의 쓰기로 묶고, 같은 문서에는 한 번에 하나씩만 쓴다
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    const body = JSON.parse(JSON.stringify(progress));
+    saving = saving.then(() => docRef.set(body)).catch(err => {
+      if (err && err.code === 'invalid_argument') { docRef = null; setSync('이 브라우저에만 저장 (계정 저장 권한 없음)'); }
+    });
+  }, 600);
+}
+function setSync(text) { document.getElementById('sync').textContent = text; }
+
+async function connectStore() {
+  if (!window.claude || !window.claude.use) { setSync('이 브라우저에만 저장'); return; }
+  const [db, user] = await Promise.all([claude.use('db'), claude.use('user')]);
+  const uid = user ? await user.id() : null;
+  if (!db || !uid) { setSync('이 브라우저에만 저장'); return; }
+  docRef = db.doc('data/users/' + uid + '/progress');
+  setSync('내 계정에 저장됨');
+  let first = true;
+  docRef.onSnapshot(snap => {
+    if (snap.exists) {
+      progress = { known: {}, wrong: {}, quizzes: 0, bestPct: 0, ...snap.data() };
+      render();
+    } else if (first && (Object.keys(progress.known).length || Object.keys(progress.wrong).length)) {
+      save();  // 처음 계정에 연결될 때 이 브라우저에 있던 기록을 옮긴다
+    }
+    first = false;
+  }, () => setSync('이 브라우저에만 저장'));
+}
+
+function markWrong(id) {
+  const w = progress.wrong[id] || { n: 0 };
+  progress.wrong = { ...progress.wrong, [id]: { n: w.n + 1, last: Date.now() } };
+  delete progress.known[id];
+}
+function markRight(id) {
+  const w = progress.wrong[id];
+  if (!w) return;
+  const wrong = { ...progress.wrong };
+  if (w.n <= 1) delete wrong[id]; else wrong[id] = { ...w, n: w.n - 1 };
+  progress.wrong = wrong;
+}
+
+// ───────── 공통 ─────────
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const VIEWS = ['dict', 'cards', 'quiz', 'wrong'];
+let view = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'dict';
+
+function show(v) {
+  view = v;
+  VIEWS.forEach(x => { $('view-' + x).hidden = x !== v; $('tab-' + x).setAttribute('aria-selected', x === v); });
+  try { history.replaceState(null, '', '#' + v); } catch (e) {}
+  render();
+}
+document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => show(b.dataset.view)));
+
+function render() {
+  const wrongN = Object.keys(progress.wrong).length;
+  $('wrongCount').textContent = wrongN ? wrongN : '';
+  $('total').textContent = TERMS.length;
+  if (view === 'dict') renderDict();
+  if (view === 'cards') renderCard();
+  if (view === 'quiz' && !quiz) renderQuizSetup();
+  if (view === 'wrong') renderWrong();
+}
+
+// ───────── 개념 사전 ─────────
+let dictCat = '전체';
+function renderDict() {
+  $('dictChips').innerHTML = ['전체', ...CATS].map(c =>
+    `<button class="chip" aria-pressed="${c === dictCat}" data-c="${esc(c)}">${esc(c)}</button>`).join('');
+  const q = $('q').value.trim().toLowerCase();
+  const list = TERMS.filter(t => (dictCat === '전체' || t.cat === dictCat) &&
+    (!q || (t.term + t.en + t.def + t.ex).toLowerCase().includes(q)));
+  $('dictList').innerHTML = list.length ? list.map(t => `
+    <article class="entry">
+      <div class="head">
+        <span class="term">${esc(t.term)}</span><span class="en">${esc(t.en)}</span>
+        ${progress.known[t.id] ? '<span class="badge known">외움</span>' : ''}
+        ${progress.wrong[t.id] ? `<span class="badge wrong">오답 ${progress.wrong[t.id].n}</span>` : ''}
+      </div>
+      <span class="cat">${esc(t.cat)}</span>
+      <p>${esc(t.def)}</p>
+      <p class="ex">예) ${esc(t.ex)}</p>
+    </article>`).join('') : '<div class="empty"><strong>검색 결과 없음</strong>다른 단어로 찾아보세요.</div>';
+}
+$('dictChips').addEventListener('click', e => { const c = e.target.dataset.c; if (c) { dictCat = c; renderDict(); } });
+$('q').addEventListener('input', renderDict);
+
+// ───────── 암기 카드 ─────────
+let cardIdx = 0, flipped = false;
+$('cardCat').innerHTML = ['전체', ...CATS].map(c => `<option>${esc(c)}</option>`).join('');
+function cardDeck() {
+  const c = $('cardCat').value;
+  return TERMS.filter(t => (c === '전체' || t.cat === c) && ($('cardMode').value === 'all' || !progress.known[t.id]));
+}
+function renderCard() {
+  const c = $('cardCat').value;
+  const pool = TERMS.filter(t => c === '전체' || t.cat === c);
+  const knownN = pool.filter(t => progress.known[t.id]).length;
+  $('cardBar').style.width = (pool.length ? knownN / pool.length * 100 : 0) + '%';
+  const deck = cardDeck();
+  if (cardIdx >= deck.length) cardIdx = Math.max(0, deck.length - 1);
+  $('cardMeta').textContent = `외운 개념 ${knownN} / ${pool.length}` + (deck.length ? `  ·  카드 ${cardIdx + 1} / ${deck.length}` : '');
+  ['prev', 'dunno', 'gotit'].forEach(id => $(id).disabled = !deck.length);
+  if (!deck.length) {
+    $('flash').innerHTML = `<div><div class="term">다 외웠어요</div><div class="hint">이 분류의 개념을 모두 외웠습니다. 퀴즈로 확인해 보세요.</div></div>`;
+    return;
+  }
+  const t = deck[cardIdx];
+  $('flash').innerHTML = flipped
+    ? `<div><div class="cat">${esc(t.term)}</div><div class="def">${esc(t.def)}</div><div class="ex">예) ${esc(t.ex)}</div></div>`
+    : `<div><div class="cat">${esc(t.cat)}</div><div class="term">${esc(t.term)}</div><div class="en">${esc(t.en)}</div><div class="hint">눌러서 뜻 보기</div></div>`;
+}
+function flip() { if (cardDeck().length) { flipped = !flipped; renderCard(); } }
+function moveCard(d) { const n = cardDeck().length; if (n) { cardIdx = (cardIdx + d + n) % n; flipped = false; renderCard(); } }
+$('flash').addEventListener('click', flip);
+$('prev').addEventListener('click', () => moveCard(-1));
+$('gotit').addEventListener('click', () => {
+  const deck = cardDeck(), t = deck[cardIdx];
+  progress.known = { ...progress.known, [t.id]: true };
+  save(); flipped = false;
+  // '못 외운 것' 모드에서는 이 카드가 빠지므로 인덱스를 그대로 두면 다음 카드
+  if ($('cardMode').value === 'all') cardIdx = (cardIdx + 1) % deck.length;
+  render();
+});
+$('dunno').addEventListener('click', () => {
+  const t = cardDeck()[cardIdx];
+  markWrong(t.id); save(); moveCard(1); render();
+});
+$('cardCat').addEventListener('change', () => { cardIdx = 0; flipped = false; renderCard(); });
+$('cardMode').addEventListener('change', () => { cardIdx = 0; flipped = false; renderCard(); });
+document.addEventListener('keydown', e => {
+  if (view !== 'cards' || ['INPUT', 'SELECT'].includes(e.target.tagName)) return;
+  if (e.key === ' ') { e.preventDefault(); flip(); }
+  if (e.key === 'ArrowRight') moveCard(1);
+  if (e.key === 'ArrowLeft') moveCard(-1);
+});
+
+// ───────── 퀴즈 ─────────
+// 문제 유형: 설명 → 용어 고르기 / 용어 → 설명 고르기 (보기 4개, 가능하면 같은 분류에서 헷갈리게)
+let quiz = null;
+function makeQuestion(t) {
+  const same = shuffle(TERMS.filter(x => x.id !== t.id && x.cat === t.cat));
+  const other = shuffle(TERMS.filter(x => x.id !== t.id && x.cat !== t.cat));
+  const choices = shuffle([t, ...[...same, ...other].slice(0, 3)]);
+  return { t, choices, type: Math.random() < 0.5 ? 'def2term' : 'term2def', picked: null };
+}
+function startQuiz(ids, label) {
+  quiz = { label, qs: shuffle(ids).map(id => makeQuestion(BY_ID[id])), i: 0, right: 0, wrongIds: [], fromWrong: label === '오답 복습' };
+  renderQuiz();
+}
+function renderQuizSetup() {
+  const best = progress.bestPct ? `최고 점수 ${progress.bestPct}점 · ` : '';
+  $('quizBox').innerHTML = `
+    <div class="panel" style="display:grid;gap:14px">
+      <div><b>퀴즈 만들기</b><div class="meta">${best}지금까지 ${progress.quizzes}번 풀었어요</div></div>
+      <div class="row">
+        <label class="field">분류<select id="qCat">${['전체', ...CATS].map(c => `<option>${esc(c)}</option>`).join('')}</select></label>
+        <label class="field">문제 수<select id="qNum"><option>5</option><option selected>10</option><option>20</option></select></label>
+      </div>
+      <p class="meta" style="margin:0">설명을 보고 용어를 고르거나, 용어를 보고 설명을 고릅니다. 틀린 문제는 오답노트에 자동으로 담겨요.</p>
+      <div class="row"><button class="btn primary" id="qStart">퀴즈 시작</button></div>
+    </div>`;
+  $('qStart').addEventListener('click', () => {
+    const c = $('qCat').value, n = +$('qNum').value;
+    const pool = TERMS.filter(t => c === '전체' || t.cat === c).map(t => t.id);
+    startQuiz(shuffle(pool).slice(0, n), c);
+  });
+}
+function renderQuiz() {
+  if (quiz.i >= quiz.qs.length) return renderQuizResult();
+  const q = quiz.qs[quiz.i], t = q.t, answered = q.picked !== null;
+  const prompt = q.type === 'def2term'
+    ? `다음 설명에 해당하는 용어는?<div style="font-weight:400;font-size:16px;margin-top:8px">${esc(t.def)}</div>`
+    : `<span class="term">${esc(t.term)}</span> 의 설명으로 맞는 것은?`;
+  $('quizBox').innerHTML = `
+    <div class="panel">
+      <div class="qtop"><span>${esc(quiz.label)}</span><span>${quiz.i + 1} / ${quiz.qs.length} · 맞힘 ${quiz.right}</span></div>
+      <div class="question">${prompt}</div>
+      <div class="choices">${q.choices.map((c, k) => {
+        let cls = '';
+        if (answered && c.id === t.id) cls = 'right';
+        else if (answered && k === q.picked) cls = 'wrong';
+        const label = q.type === 'def2term' ? `<span class="term">${esc(c.term)}</span>` : esc(c.def);
+        return `<button class="choice ${cls}" data-k="${k}" ${answered ? 'disabled' : ''}>${label}</button>`;
+      }).join('')}</div>
+      ${answered ? `
+        <div class="feedback ${q.choices[q.picked].id === t.id ? 'ok' : 'no'}">
+          <b>${q.choices[q.picked].id === t.id ? '정답!' : '오답 · 정답은 ' + esc(t.term)}</b><br>${esc(t.def)}<br><span class="meta">예) ${esc(t.ex)}</span>
+        </div>
+        <div class="row" style="margin-top:14px;justify-content:flex-end">
+          <button class="btn primary" id="qNext">${quiz.i + 1 < quiz.qs.length ? '다음 문제' : '결과 보기'}</button>
+        </div>` : ''}
+    </div>`;
+  $('quizBox').querySelectorAll('.choice:not(:disabled)').forEach(b => b.addEventListener('click', () => answer(+b.dataset.k)));
+  if (answered) { $('qNext').addEventListener('click', () => { quiz.i++; renderQuiz(); }); $('qNext').focus(); }
+}
+function answer(k) {
+  const q = quiz.qs[quiz.i];
+  q.picked = k;
+  if (q.choices[k].id === q.t.id) { quiz.right++; markRight(q.t.id); }
+  else { quiz.wrongIds.push(q.t.id); markWrong(q.t.id); }
+  save(); render(); renderQuiz();
+}
+function renderQuizResult() {
+  const pct = Math.round(quiz.right / quiz.qs.length * 100);
+  if (!quiz.saved) {
+    quiz.saved = true;
+    progress.quizzes = (progress.quizzes || 0) + 1;
+    progress.bestPct = Math.max(progress.bestPct || 0, pct);
+    save();
+  }
+  $('quizBox').innerHTML = `
+    <div class="panel" style="display:grid;gap:12px">
+      <div class="meta">${esc(quiz.label)} · ${quiz.qs.length}문제</div>
+      <div class="score">${pct}점</div>
+      <div>${quiz.right}개 맞히고 ${quiz.wrongIds.length}개 틀렸어요.${quiz.fromWrong ? ' 오답노트에서 맞힌 개념은 틀린 횟수가 1씩 줄었어요.' : ''}</div>
+      ${quiz.wrongIds.length ? `<div class="meta">틀린 개념: ${quiz.wrongIds.map(id => esc(BY_ID[id].term)).join(', ')}</div>` : ''}
+      <div class="row">
+        <button class="btn primary" id="qAgain">새 퀴즈</button>
+        ${Object.keys(progress.wrong).length ? '<button class="btn" id="qWrong">오답노트 보기</button>' : ''}
+      </div>
+    </div>`;
+  $('qAgain').addEventListener('click', () => { quiz = null; renderQuizSetup(); });
+  if ($('qWrong')) $('qWrong').addEventListener('click', () => { quiz = null; show('wrong'); });
+}
+
+// ───────── 오답노트 ─────────
+function renderWrong() {
+  const items = Object.entries(progress.wrong).sort((a, b) => b[1].n - a[1].n || b[1].last - a[1].last)
+    .filter(([id]) => BY_ID[id]);
+  if (!items.length) {
+    $('wrongBox').innerHTML = `<div class="empty"><strong>오답노트가 비어 있어요</strong>퀴즈에서 틀리거나 암기 카드에서 "모르겠어요"를 누른 개념이 여기에 모입니다.<div class="row" style="justify-content:center;margin-top:14px"><button class="btn primary" id="wGo">퀴즈 풀러 가기</button></div></div>`;
+    $('wGo').addEventListener('click', () => show('quiz'));
+    return;
+  }
+  $('wrongBox').innerHTML = `
+    <div class="row" style="justify-content:space-between;margin-bottom:8px">
+      <span class="meta">${items.length}개 · 오답 복습 퀴즈에서 맞히면 틀린 횟수가 1씩 줄고, 0이 되면 빠집니다.</span>
+      <button class="btn primary" id="wQuiz">오답만 퀴즈</button>
+    </div>
+    ${items.map(([id, w]) => { const t = BY_ID[id]; return `
+      <div class="wrongitem">
+        <div>
+          <span class="term">${esc(t.term)}</span> <span class="en">${esc(t.en)}</span>
+          <div>${esc(t.def)}</div>
+          <div class="meta">예) ${esc(t.ex)}</div>
+        </div>
+        <div style="display:grid;gap:6px;justify-items:end;align-content:start">
+          <span class="tally">✕ ${w.n}</span>
+          <button class="btn" data-del="${id}" style="padding:4px 10px;font-size:12px">외웠어요</button>
+        </div>
+      </div>`; }).join('')}`;
+  $('wQuiz').addEventListener('click', () => { startQuiz(items.map(([id]) => id), '오답 복습'); show('quiz'); });
+  $('wrongBox').querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => {
+    const wrong = { ...progress.wrong }; delete wrong[b.dataset.del];
+    progress.wrong = wrong; progress.known = { ...progress.known, [b.dataset.del]: true };
+    save(); render();
+  }));
+}
+
+loadLocal();
+show(view);
+connectStore();
+</script>
